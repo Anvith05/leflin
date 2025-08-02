@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const postal = document.getElementById('signup-postal').value.trim();
 
             try {
-                const response = await fetch('http://localhost:3001/api/auth/signup', {
+                const response = await fetch('/api/auth/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fullName, email, password, phone, accountType, orgName, address1, address2, city, state, postal })
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             try {
-                const response = await fetch('http://localhost:3001/api/auth/login', {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
