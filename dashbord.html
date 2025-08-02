@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Leflin Dashboard</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { background: #f7f8fa; font-family: 'Inter', sans-serif; }
+    .dashboard-main { display: flex; max-width: 1200px; margin: 2.5rem auto; }
+    .sidebar { width: 220px; background: #fff; border-radius: 18px; box-shadow: 0 2px 12px rgba(44,62,80,0.07); padding: 2.2rem 1.2rem; margin-right: 2rem; }
+    .sidebar .logo { font-size: 1.5rem; color: #16a34a; font-weight: 700; margin-bottom: 2.2rem; text-align: left; }
+    .sidebar nav { display: flex; flex-direction: column; gap: 1.1rem; }
+    .sidebar nav a { color: #222; text-decoration: none; font-size: 1.08rem; font-weight: 500; padding: 0.6rem 1rem; border-radius: 8px; transition: background 0.2s; }
+    .sidebar nav a.active, .sidebar nav a:hover { background: #e6fbe6; color: #16a34a; }
+    .dashboard-content { flex: 1; background: #fff; border-radius: 18px; box-shadow: 0 2px 12px rgba(44,62,80,0.07); padding: 2.5rem 2rem; }
+    .dashboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.2rem; }
+    .dashboard-title { font-size: 2.1rem; font-weight: 700; color: #16a34a; }
+    .dashboard-user { font-size: 1.08rem; color: #222; font-weight: 600; display: flex; align-items: center; gap: 0.7rem; }
+    .dashboard-stats { display: flex; gap: 2.2rem; margin-bottom: 2.2rem; }
+    .stat-card { background: #f7f8fa; border-radius: 12px; padding: 1.2rem 1.5rem; flex: 1; box-shadow: 0 2px 8px rgba(44,62,80,0.07); display: flex; flex-direction: column; align-items: center; }
+    .stat-title { font-size: 1.08rem; color: #444; margin-bottom: 0.5rem; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: #16a34a; margin-bottom: 0.2rem; }
+    .stat-note { font-size: 0.98rem; color: #888; }
+    @media (max-width: 900px) {
+      .dashboard-main { flex-direction: column; }
+      .sidebar { margin-right: 0; margin-bottom: 2rem; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="dashboard-main">
+    <aside class="sidebar">
+      <div class="logo">Leflin</div>
+      <nav id="sidebar-links"></nav>
+    </aside>
+
+    <section class="dashboard-content">
+      <div class="dashboard-header">
+        <div class="dashboard-title">Welcome back!</div>
+        <div class="dashboard-user" id="dashboard-user"></div>
+      </div>
+
+      <div class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-title">Active Donations</div>
+          <div class="stat-value">5</div>
+          <div class="stat-note">+2 this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Pending Requests</div>
+          <div class="stat-value">3</div>
+          <div class="stat-note">2 new today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Completed This Month</div>
+          <div class="stat-value">12</div>
+          <div class="stat-note">+5 from last month</div>
+        </div>
+      </div>
+
+      <div id="donor-form-section" style="margin-top:2rem; display: none;">
+        <h3 style="color:#16a34a;margin-bottom:1rem;">Post a New Donation</h3>
+        <form id="donation-form" style="max-width:450px;">
+          <input type="text" id="title" placeholder="Title" required style="width:100%;margin-bottom:1rem;padding:0.6rem;border-radius:6px;border:1px solid #ccc;">
+          <input type="text" id="foodType" placeholder="Type of Food" required style="width:100%;margin-bottom:1rem;padding:0.6rem;border-radius:6px;border:1px solid #ccc;">
+          <input type="number" id="quantity" placeholder="No. of Meals" required style="width:100%;margin-bottom:1rem;padding:0.6rem;border-radius:6px;border:1px solid #ccc;">
+          <input type="text" id="location" placeholder="Pickup Location" required style="width:100%;margin-bottom:1rem;padding:0.6rem;border-radius:6px;border:1px solid #ccc;">
+          <textarea id="description" placeholder="Additional Notes (optional)" rows="3" style="width:100%;margin-bottom:1.2rem;padding:0.6rem;border-radius:6px;border:1px solid #ccc;"></textarea>
+          <button type="submit" style="width:100%;background:#16a34a;color:#fff;padding:0.8rem;border:none;border-radius:6px;font-weight:600;">Post Donation</button>
+        </form>
+      </div>
+
+      <div id="my-donations-section" style="display:none; margin-top: 3rem;">
+        <h3 style="color:#16a34a;text-align:center;">My Donations</h3>
+        <div id="my-donations-list" style="margin-top:1.5rem; max-width:600px; margin:0 auto;"></div>
+      </div>
+
+      <div id="ngo-donations-view" style="display:none; margin-top: 3rem;">
+        <h3 style="color:#16a34a;text-align:center;">Available Donations</h3>
+        <div id="donations-list" style="margin-top:1.5rem; max-width:600px; margin-left:auto; margin-right:auto;"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer style="width:100%;background:#111;color:#fff;padding:1rem 0;text-align:center;">
+  <div class="container" style="margin:0 auto;max-width:900px;">
+    <p style="margin:0;font-size:1rem;">&copy; 2024 Leflin. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('leflin_token');
+    const user = JSON.parse(localStorage.getItem('leflin_user'));
+
+    if (!token || !user) return window.location.href = 'index.html';
+
+    const dashboardUser = document.getElementById('dashboard-user');
+    if (user.name) {
+      const initial = user.name.charAt(0).toUpperCase();
+      dashboardUser.innerHTML = `<span style="background:#e6fbe6;color:#16a34a;border-radius:50%;padding:0.5rem 0.8rem;font-weight:700;">${initial}</span> ${user.name}`;
+    }
+
+    const sidebar = document.getElementById('sidebar-links');
+    sidebar.innerHTML = `<a href="#overview" class="active">Overview</a>`;
+
+    if (user.accountType === 'donor') {
+      sidebar.innerHTML += `
+        <a href="#my-donations" id="view-my-donations">My Donations</a>
+        <a href="#post-donation" id="toggle-donation-form">Post New Donation</a>
+      `;
+    }
+
+    if (user.accountType === 'ngo') {
+      sidebar.innerHTML += `<a href="#requests">Requests</a>`;
+      document.getElementById('ngo-donations-view').style.display = 'block';
+      loadAvailableDonations();
+    }
+
+    sidebar.innerHTML += `<a href="index.html" style="color:red;">Logout</a>`;
+
+    const donationFormSection = document.getElementById('donor-form-section');
+    const toggleDonationFormLink = document.getElementById('toggle-donation-form');
+    const myDonationsSection = document.getElementById('my-donations-section');
+    const viewMyDonations = document.getElementById('view-my-donations');
+
+    if (toggleDonationFormLink) {
+      toggleDonationFormLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        donationFormSection.style.display = donationFormSection.style.display === 'none' ? 'block' : 'none';
+        myDonationsSection.style.display = 'none';
+      });
+    }
+
+    if (viewMyDonations) {
+      viewMyDonations.addEventListener('click', async (e) => {
+        e.preventDefault();
+        donationFormSection.style.display = 'none';
+        myDonationsSection.style.display = 'block';
+        await loadMyDonations();
+      });
+    }
+
+    const donationForm = document.getElementById('donation-form');
+    if (donationForm) {
+      donationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const quantity = parseInt(document.getElementById('quantity').value);
+        const foodType = document.getElementById('foodType').value;
+        const response = await fetch('http://localhost:3001/api/donations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            quantity: parseInt(document.getElementById('quantity').value),
+            foodType: document.getElementById('foodType').value,
+            location: document.getElementById('location').value,
+            donorId: user._id
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          alert('Donation posted successfully!');
+          donationForm.reset();
+        } else {
+          alert('Failed to post donation: ' + data.message);
+        }
+      });
+    }
+
+    async function loadAvailableDonations() {
+      const res = await fetch('http://localhost:3001/api/donations');
+      const donations = await res.json();
+      const container = document.getElementById('donations-list');
+      container.innerHTML = '';
+
+      const available = donations.filter(d => d.status === 'available');
+
+      if (!available.length) {
+        container.innerHTML = '<p style="text-align:center;">No donations available right now.</p>';
+        return;
+      }
+
+      available.forEach(d => {
+        const card = document.createElement('div');
+        card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
+        card.innerHTML = `
+          <h4>${d.title}</h4>
+          <p>${d.description}</p>
+          <p><strong>Meals:</strong> ${d.quantity}</p>
+          <p><strong>Location:</strong> ${d.location}</p>
+          <button onclick="requestDonation('${d._id}')" style="margin-top:0.8rem;padding:0.5rem 1rem;background:#16a34a;color:white;border:none;border-radius:6px;">Request</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function loadMyDonations() {
+      const res = await fetch('http://localhost:3001/api/donations');
+      const all = await res.json();
+      const mine = all.filter(d => d.donorId === user._id);
+
+      const container = document.getElementById('my-donations-list');
+      container.innerHTML = '';
+
+      if (!mine.length) {
+        container.innerHTML = '<p style="text-align:center;">You have not posted any donations yet.</p>';
+        return;
+      }
+
+      mine.forEach(d => {
+        const card = document.createElement('div');
+        card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
+        card.innerHTML = `
+          <h4>${d.title}</h4>
+          <p>${d.description}</p>
+          <p><strong>Meals:</strong> ${d.quantity}</p>
+          <p><strong>Location:</strong> ${d.location}</p>
+          <p><strong>Status:</strong> ${
+            d.status === 'requested' && d.requestedBy
+              ? 'Request Accepted'
+              : d.status.charAt(0).toUpperCase() + d.status.slice(1)
+          }</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    window.requestDonation = async function(donationId) {
+      const res = await fetch(`http://localhost:3001/api/donations/${donationId}/request`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ngoId: user._id })
+      });
+
+      if (res.ok) {
+        alert('Request sent successfully!');
+        loadAvailableDonations();
+      } else {
+        const data = await res.json();
+        alert('Failed to request donation: ' + data.message);
+      }
+    }
+  });
+</script>
+</body>
+</html>
