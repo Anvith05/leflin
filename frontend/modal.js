@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok && data.token) {
                     localStorage.setItem('leflin_token', data.token);
                     localStorage.setItem('leflin_user', JSON.stringify(data.user));
-                    window.location.href = '/dashboard.html';
+                    window.location.href = '/frontend/dashboard.html';
                 } else {
                     alert(data.message || 'Signup failed');
                 }
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok && data.token) {
                     localStorage.setItem('leflin_token', data.token);
                     localStorage.setItem('leflin_user', JSON.stringify(data.user));
-                    window.location.href = '/dashboard.html';
+                    window.location.href = '/frontend/dashboard.html';
                 } else {
                     alert(data.message || 'Login failed');
                 }
