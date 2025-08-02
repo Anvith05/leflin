@@ -8,10 +8,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static frontend files
-app.use(express.static(path.join(__dirname, '../frontend')));
+// ✅ Serve static frontend files correctly
+app.use(express.static(path.join(__dirname, 'frontend')));
 
-// MongoDB connection
+// ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -21,16 +21,16 @@ mongoose.connect(process.env.MONGO_URI, {
     console.error('❌ MongoDB connection error:', err);
 });
 
-// API routes
+// ✅ API routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/donations', require('./routes/donation')); // ✅ Added donation route
+app.use('/api/donations', require('./routes/donation'));
 
-// Fallback to index.html for any unknown route (for SPA support)
+// ✅ Catch-all for React/HTML routing
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
-// Start server
+// ✅ Start server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
