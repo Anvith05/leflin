@@ -8,7 +8,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Serve static frontend files
+// ✅ Serve static files explicitly from /frontend
+app.use('/frontend', express.static(path.join(__dirname, 'frontend')));
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 // ✅ MongoDB connection
@@ -25,12 +26,12 @@ mongoose.connect(process.env.MONGO_URI, {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/donations', require('./routes/donation'));
 
-// ✅ Explicit route for dashboard.html
+// ✅ Serve dashboard explicitly
 app.get('/frontend/dashboard.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'dashboard.html'));
 });
 
-// ✅ Catch-all fallback for SPA support (only for frontend routes)
+// ✅ Catch-all route for index.html (homepage fallback)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
