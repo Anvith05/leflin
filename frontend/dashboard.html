@@ -97,170 +97,221 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('leflin_token');
-    const user = JSON.parse(localStorage.getItem('leflin_user'));
+    const userData = localStorage.getItem('leflin_user');
 
-    if (!token || !user) return window.location.href = 'index.html';
-
-    const dashboardUser = document.getElementById('dashboard-user');
-    if (user.name) {
-      const initial = user.name.charAt(0).toUpperCase();
-      dashboardUser.innerHTML = `<span style="background:#e6fbe6;color:#16a34a;border-radius:50%;padding:0.5rem 0.8rem;font-weight:700;">${initial}</span> ${user.name}`;
+    // Ensure user data exists
+    if (!token || !userData) {
+      window.location.href = 'index.html';
+      return;
     }
 
-    const sidebar = document.getElementById('sidebar-links');
-    sidebar.innerHTML = `<a href="#overview" class="active">Overview</a>`;
+    let user;
+    try {
+      user = JSON.parse(userData);
+    } catch (err) {
+      console.error('Failed to parse user data from localStorage', err);
+      window.location.href = 'index.html';
+      return;
+    }
 
-    if (user.accountType === 'donor') {
-      sidebar.innerHTML += `
-        <a href="#my-donations" id="view-my-donations">My Donations</a>
-        <a href="#post-donation" id="toggle-donation-form">Post New Donation</a>
+    // Display user in dashboard
+    const dashboardUser = document.getElementById('dashboard-user');
+    if (dashboardUser && user.name) {
+      const initial = user.name.charAt(0).toUpperCase();
+      dashboardUser.innerHTML = `
+        <span style="background:#e6fbe6;color:#16a34a;border-radius:50%;padding:0.5rem 0.8rem;font-weight:700;">
+          ${initial}
+        </span> ${user.name}
       `;
     }
 
-    if (user.accountType === 'ngo') {
-      sidebar.innerHTML += `<a href="#requests">Requests</a>`;
-      document.getElementById('ngo-donations-view').style.display = 'block';
-      loadAvailableDonations();
+    // Build sidebar
+    const sidebar = document.getElementById('sidebar-links');
+    if (sidebar) {
+      sidebar.innerHTML = `<a href="#overview" class="active">Overview</a>`;
+
+      if (user.accountType === 'donor') {
+        sidebar.innerHTML += `
+          <a href="#my-donations" id="view-my-donations">My Donations</a>
+          <a href="#post-donation" id="toggle-donation-form">Post New Donation</a>
+        `;
+      }
+
+      if (user.accountType === 'ngo') {
+        sidebar.innerHTML += `<a href="#requests">Requests</a>`;
+        const ngoView = document.getElementById('ngo-donations-view');
+        if (ngoView) ngoView.style.display = 'block';
+        loadAvailableDonations();
+      }
+
+      sidebar.innerHTML += `<a href="index.html" style="color:red;">Logout</a>`;
     }
 
-    sidebar.innerHTML += `<a href="index.html" style="color:red;">Logout</a>`;
-
+    // DOM elements
     const donationFormSection = document.getElementById('donor-form-section');
     const toggleDonationFormLink = document.getElementById('toggle-donation-form');
     const myDonationsSection = document.getElementById('my-donations-section');
     const viewMyDonations = document.getElementById('view-my-donations');
+    const donationForm = document.getElementById('donation-form');
 
+    // Toggle form visibility
     if (toggleDonationFormLink) {
       toggleDonationFormLink.addEventListener('click', (e) => {
         e.preventDefault();
-        donationFormSection.style.display = donationFormSection.style.display === 'none' ? 'block' : 'none';
-        myDonationsSection.style.display = 'none';
+        if (donationFormSection) {
+          donationFormSection.style.display =
+            donationFormSection.style.display === 'none' ? 'block' : 'none';
+        }
+        if (myDonationsSection) myDonationsSection.style.display = 'none';
       });
     }
 
+    // Show donor's donations
     if (viewMyDonations) {
       viewMyDonations.addEventListener('click', async (e) => {
         e.preventDefault();
-        donationFormSection.style.display = 'none';
-        myDonationsSection.style.display = 'block';
+        if (donationFormSection) donationFormSection.style.display = 'none';
+        if (myDonationsSection) myDonationsSection.style.display = 'block';
         await loadMyDonations();
       });
     }
 
-    const donationForm = document.getElementById('donation-form');
+    // Handle donation form submission
     if (donationForm) {
       donationForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const response = await fetch('http://localhost:3001/api/donations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: document.getElementById('title').value,
-            description: document.getElementById('description').value,
-            quantity: parseInt(document.getElementById('quantity').value),
-            foodType: document.getElementById('foodType').value,
-            location: document.getElementById('location').value,
-            donorId: user._id
-          })
-        });
+        try {
+          const response = await fetch('http://localhost:3001/api/donations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: document.getElementById('title')?.value || '',
+              description: document.getElementById('description')?.value || '',
+              quantity: parseInt(document.getElementById('quantity')?.value) || 0,
+              foodType: document.getElementById('foodType')?.value || '',
+              location: document.getElementById('location')?.value || '',
+              donorId: user._id
+            })
+          });
 
-        const data = await response.json();
-        if (response.ok) {
-          showSuccessModal('Donation posted successfully!');
-          donationForm.reset();
+          const data = await response.json();
+          if (response.ok) {
+            showSuccessModal('Donation posted successfully!');
+            donationForm.reset();
 
-          if (user.accountType === 'donor') {
-            await loadMyDonations();
-            myDonationsSection.style.display = 'block';
-            donationFormSection.style.display = 'none';
+            if (user.accountType === 'donor') {
+              await loadMyDonations();
+              if (myDonationsSection) myDonationsSection.style.display = 'block';
+              if (donationFormSection) donationFormSection.style.display = 'none';
+            }
+
+            if (user.accountType === 'ngo') {
+              await loadAvailableDonations();
+            }
+          } else {
+            alert('Failed to post donation: ' + (data.message || 'Unknown error'));
           }
-
-          if (user.accountType === 'ngo') {
-            await loadAvailableDonations();
-          }
-        } else {
-          alert('Failed to post donation: ' + data.message);
+        } catch (err) {
+          console.error('Error posting donation:', err);
+          alert('Something went wrong while posting donation.');
         }
       });
     }
 
+    // Load available donations (for NGO)
     async function loadAvailableDonations() {
-      const res = await fetch('http://localhost:3001/api/donations');
-      const donations = await res.json();
-      const container = document.getElementById('donations-list');
-      container.innerHTML = '';
+      try {
+        const res = await fetch('http://localhost:3001/api/donations');
+        const donations = await res.json();
+        const container = document.getElementById('donations-list');
+        if (!container) return;
+        container.innerHTML = '';
 
-      const available = donations.filter(d => d.status === 'available');
+        const available = donations.filter(d => d.status === 'available');
+        if (!available.length) {
+          container.innerHTML = '<p style="text-align:center;">No donations available right now.</p>';
+          return;
+        }
 
-      if (!available.length) {
-        container.innerHTML = '<p style="text-align:center;">No donations available right now.</p>';
-        return;
+        available.forEach(d => {
+          const card = document.createElement('div');
+          card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
+          card.innerHTML = `
+            <h4>${d.title}</h4>
+            <p>${d.description}</p>
+            <p><strong>Meals:</strong> ${d.quantity}</p>
+            <p><strong>Location:</strong> ${d.location}</p>
+            <button onclick="requestDonation('${d._id}')" style="margin-top:0.8rem;padding:0.5rem 1rem;background:#16a34a;color:white;border:none;border-radius:6px;">Request</button>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Error loading donations:', err);
       }
-
-      available.forEach(d => {
-        const card = document.createElement('div');
-        card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
-        card.innerHTML = `
-          <h4>${d.title}</h4>
-          <p>${d.description}</p>
-          <p><strong>Meals:</strong> ${d.quantity}</p>
-          <p><strong>Location:</strong> ${d.location}</p>
-          <button onclick="requestDonation('${d._id}')" style="margin-top:0.8rem;padding:0.5rem 1rem;background:#16a34a;color:white;border:none;border-radius:6px;">Request</button>
-        `;
-        container.appendChild(card);
-      });
     }
 
+    // Load donor's donations
     async function loadMyDonations() {
-      const res = await fetch('http://localhost:3001/api/donations');
-      const all = await res.json();
+      try {
+        const res = await fetch('http://localhost:3001/api/donations');
+        const all = await res.json();
+        const mine = all.filter(d =>
+          d.donorId === user._id || (d.donorId && d.donorId._id === user._id)
+        );
 
-      const mine = all.filter(d => 
-        d.donorId === user._id || (d.donorId && d.donorId._id === user._id)
-      );
+        const container = document.getElementById('my-donations-list');
+        if (!container) return;
+        container.innerHTML = '';
 
-      const container = document.getElementById('my-donations-list');
-      container.innerHTML = '';
+        if (!mine.length) {
+          container.innerHTML = '<p style="text-align:center;">You have not posted any donations yet.</p>';
+          return;
+        }
 
-      if (!mine.length) {
-        container.innerHTML = '<p style="text-align:center;">You have not posted any donations yet.</p>';
-        return;
+        mine.forEach(d => {
+          const card = document.createElement('div');
+          card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
+          card.innerHTML = `
+            <h4>${d.title}</h4>
+            <p>${d.description}</p>
+            <p><strong>Meals:</strong> ${d.quantity}</p>
+            <p><strong>Location:</strong> ${d.location}</p>
+            <p><strong>Status:</strong> ${
+              d.status === 'requested' && d.requestedBy
+                ? 'Request Accepted'
+                : d.status.charAt(0).toUpperCase() + d.status.slice(1)
+            }</p>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Error loading my donations:', err);
       }
-
-      mine.forEach(d => {
-        const card = document.createElement('div');
-        card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
-        card.innerHTML = `
-          <h4>${d.title}</h4>
-          <p>${d.description}</p>
-          <p><strong>Meals:</strong> ${d.quantity}</p>
-          <p><strong>Location:</strong> ${d.location}</p>
-          <p><strong>Status:</strong> ${
-            d.status === 'requested' && d.requestedBy
-              ? 'Request Accepted'
-              : d.status.charAt(0).toUpperCase() + d.status.slice(1)
-          }</p>
-        `;
-        container.appendChild(card);
-      });
     }
 
+    // Request a donation (for NGO)
     window.requestDonation = async function(donationId) {
-      const res = await fetch(`http://localhost:3001/api/donations/${donationId}/request`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ngoId: user._id })
-      });
+      try {
+        const res = await fetch(`http://localhost:3001/api/donations/${donationId}/request`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ngoId: user._id })
+        });
 
-      if (res.ok) {
-        showSuccessModal('Request sent successfully!');
-        loadAvailableDonations();
-      } else {
-        const data = await res.json();
-        alert('Failed to request donation: ' + data.message);
+        if (res.ok) {
+          showSuccessModal('Request sent successfully!');
+          loadAvailableDonations();
+        } else {
+          const data = await res.json();
+          alert('Failed to request donation: ' + (data.message || 'Unknown error'));
+        }
+      } catch (err) {
+        console.error('Error requesting donation:', err);
+        alert('Something went wrong while requesting donation.');
       }
-    }
+    };
 
+    // Show modal or fallback to alert
     function showSuccessModal(message) {
       const modal = document.getElementById('success-modal');
       const modalMessage = document.getElementById('success-message');
@@ -273,5 +324,6 @@
     }
   });
 </script>
+
 </body>
 </html>
