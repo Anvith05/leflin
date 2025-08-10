@@ -177,12 +177,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ Handle donation form submission - UPDATED URL
+  // ✅ Handle donation form submission
   if (donationForm) {
     donationForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        const response = await fetch('https://leflin.onrender.com/api/donations', {
+        const response = await fetch('http://localhost:3001/api/donations', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -222,10 +222,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Load available donations (for NGO) - UPDATED URL
+  // Load available donations (for NGO)
   async function loadAvailableDonations() {
     try {
-      const res = await fetch('https://leflin.onrender.com/api/donations');
+      const res = await fetch('http://localhost:3001/api/donations');
       const donations = await res.json();
       const container = document.getElementById('donations-list');
       if (!container) return;
@@ -254,10 +254,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Load donor's donations - UPDATED URL
+  // Load donor's donations
   async function loadMyDonations() {
     try {
-      const res = await fetch('https://leflin.onrender.com/api/donations', {
+      const res = await fetch('http://localhost:3001/api/donations', {
         headers: { 'Authorization': `Bearer ${token}` } // ✅ send token here if endpoint requires auth
       });
       const all = await res.json();
@@ -295,10 +295,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Request a donation (for NGO) - UPDATED URL
+  // Request a donation (for NGO)
   window.requestDonation = async function(donationId) {
     try {
-      const res = await fetch(`https://leflin.onrender.com/api/donations/${donationId}/request`, {
+      const res = await fetch(`http://localhost:3001/api/donations/${donationId}/request`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
