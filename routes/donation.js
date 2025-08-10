@@ -1,3 +1,4 @@
+// routes/donation.js
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
@@ -5,16 +6,14 @@ const Donation = require('../models/donation');
 
 const router = express.Router();
 
-// Simple authentication middleware
+// Auth middleware
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'No token provided' });
   }
 
   const token = authHeader.split(' ')[1];
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
@@ -24,7 +23,7 @@ async function authMiddleware(req, res, next) {
     req.user = user;
     next();
   } catch (err) {
-    res.status(401).json({ message: 'Token invalid or expired' });
+    return res.status(401).json({ message: 'Token invalid or expired' });
   }
 }
 
@@ -33,7 +32,7 @@ router.post('/', authMiddleware, async (req, res) => {
   try {
     const donation = new Donation({
       ...req.body,
-      donorId: req.user._id // Link donation to logged-in user
+      donorId: req.user._id
     });
     await donation.save();
     res.status(201).json(donation);
