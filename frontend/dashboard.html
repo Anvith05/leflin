@@ -86,6 +86,10 @@
         <h3 style="color:#16a34a;text-align:center;">Available Donations</h3>
         <div id="donations-list" style="margin-top:1.5rem; max-width:600px; margin-left:auto; margin-right:auto;"></div>
       </div>
+      <div id="success-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:1.5rem; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.3); z-index:1000; max-width:300px; text-align:center;">
+  <p id="success-message" style="margin-bottom:1rem;"></p>
+  <button onclick="document.getElementById('success-modal').style.display='none'" style="padding:0.5rem 1rem; background:#16a34a; color:white; border:none; border-radius:6px;">OK</button>
+</div>
     </section>
   </div>
 </main>
@@ -147,8 +151,6 @@
     if (donationForm) {
       donationForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const quantity = parseInt(document.getElementById('quantity').value);
-        const foodType = document.getElementById('foodType').value;
         const response = await fetch('http://localhost:3001/api/donations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -164,16 +166,15 @@
 
         const data = await response.json();
         if (response.ok) {
-          alert('Donation posted successfully!');
+          showSuccessModal('Donation posted successfully!');
           donationForm.reset();
 
-          // NEW: Refresh donor's donations immediately after POST
           if (user.accountType === 'donor') {
             await loadMyDonations();
             myDonationsSection.style.display = 'block';
             donationFormSection.style.display = 'none';
           }
-          // NEW: Also refresh NGO available list if needed
+
           if (user.accountType === 'ngo') {
             await loadAvailableDonations();
           }
@@ -214,7 +215,6 @@
       const res = await fetch('http://localhost:3001/api/donations');
       const all = await res.json();
 
-      // FIXED filter: donorId can be string or object
       const mine = all.filter(d => 
         d.donorId === user._id || (d.donorId && d.donorId._id === user._id)
       );
@@ -253,11 +253,22 @@
       });
 
       if (res.ok) {
-        alert('Request sent successfully!');
+        showSuccessModal('Request sent successfully!');
         loadAvailableDonations();
       } else {
         const data = await res.json();
         alert('Failed to request donation: ' + data.message);
+      }
+    }
+
+    function showSuccessModal(message) {
+      const modal = document.getElementById('success-modal');
+      const modalMessage = document.getElementById('success-message');
+      if (modal && modalMessage) {
+        modalMessage.textContent = message;
+        modal.style.display = 'block';
+      } else {
+        alert(message);
       }
     }
   });
