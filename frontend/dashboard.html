@@ -8,9 +8,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
     body {
-  background: linear-gradient(to right, #e0f7ec, #d0fbe2);
-  font-family: 'Inter', sans-serif;
-}
+      background: linear-gradient(to right, #e0f7ec, #d0fbe2);
+      font-family: 'Inter', sans-serif;
+    }
 
     .dashboard-main { display: flex; max-width: 1200px; margin: 2.5rem auto; }
     .sidebar { width: 220px; background: #fff; border-radius: 18px; box-shadow: 0 2px 12px rgba(44,62,80,0.07); padding: 2.2rem 1.2rem; margin-right: 2rem; }
@@ -90,8 +90,6 @@
   </div>
 </main>
 
-
-
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('leflin_token');
@@ -168,6 +166,17 @@
         if (response.ok) {
           alert('Donation posted successfully!');
           donationForm.reset();
+
+          // NEW: Refresh donor's donations immediately after POST
+          if (user.accountType === 'donor') {
+            await loadMyDonations();
+            myDonationsSection.style.display = 'block';
+            donationFormSection.style.display = 'none';
+          }
+          // NEW: Also refresh NGO available list if needed
+          if (user.accountType === 'ngo') {
+            await loadAvailableDonations();
+          }
         } else {
           alert('Failed to post donation: ' + data.message);
         }
@@ -204,7 +213,11 @@
     async function loadMyDonations() {
       const res = await fetch('http://localhost:3001/api/donations');
       const all = await res.json();
-      const mine = all.filter(d => d.donorId === user._id);
+
+      // FIXED filter: donorId can be string or object
+      const mine = all.filter(d => 
+        d.donorId === user._id || (d.donorId && d.donorId._id === user._id)
+      );
 
       const container = document.getElementById('my-donations-list');
       container.innerHTML = '';
