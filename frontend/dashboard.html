@@ -223,77 +223,103 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load available donations (for NGO)
-  async function loadAvailableDonations() {
-    try {
-      const res = await fetch('http://localhost:3001/api/donations');
-      const donations = await res.json();
+async function loadAvailableDonations() {
+  try {
+    const res = await fetch('http://localhost:3001/api/donations', {
+      headers: { 'Authorization': `Bearer ${token}` } // send token in case endpoint requires auth
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error('Failed to load donations:', res.status, txt);
       const container = document.getElementById('donations-list');
-      if (!container) return;
-      container.innerHTML = '';
-
-      const available = donations.filter(d => d.status === 'available');
-      if (!available.length) {
-        container.innerHTML = '<p style="text-align:center;">No donations available right now.</p>';
-        return;
-      }
-
-      available.forEach(d => {
-        const card = document.createElement('div');
-        card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
-        card.innerHTML = `
-          <h4>${d.title}</h4>
-          <p>${d.description}</p>
-          <p><strong>Meals:</strong> ${d.quantity}</p>
-          <p><strong>Location:</strong> ${d.location}</p>
-          <button onclick="requestDonation('${d._id}')" style="margin-top:0.8rem;padding:0.5rem 1rem;background:#16a34a;color:white;border:none;border-radius:6px;">Request</button>
-        `;
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error('Error loading donations:', err);
+      if (container) container.innerHTML = '<p style="text-align:center;">Unable to load donations.</p>';
+      return;
     }
+
+    const donations = await res.json();
+    const container = document.getElementById('donations-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const available = (Array.isArray(donations) ? donations : []).filter(d => d.status === 'available');
+    if (!available.length) {
+      container.innerHTML = '<p style="text-align:center;">No donations available right now.</p>';
+      return;
+    }
+
+    available.forEach(d => {
+      const card = document.createElement('div');
+      card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
+      card.innerHTML = `
+        <h4>${d.title}</h4>
+        <p>${d.description || ''}</p>
+        <p><strong>Meals:</strong> ${d.quantity}</p>
+        <p><strong>Location:</strong> ${d.location}</p>
+        <button onclick="requestDonation('${d._id}')" style="margin-top:0.8rem;padding:0.5rem 1rem;background:#16a34a;color:white;border:none;border-radius:6px;">Request</button>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Error loading donations:', err);
   }
+}
+
 
   // Load donor's donations
-  async function loadMyDonations() {
-    try {
-      const res = await fetch('http://localhost:3001/api/donations', {
-        headers: { 'Authorization': `Bearer ${token}` } // ✅ send token here if endpoint requires auth
-      });
-      const all = await res.json();
-      const mine = all.filter(d =>
-        d.donorId === user._id || (d.donorId && d.donorId._id === user._id)
-      );
+async function loadMyDonations() {
+  try {
+    const res = await fetch('http://localhost:3001/api/donations', {
+      headers: { 'Authorization': `Bearer ${token}` } // send token if endpoint requires auth
+    });
 
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error('Failed to load my donations:', res.status, txt);
       const container = document.getElementById('my-donations-list');
-      if (!container) return;
-      container.innerHTML = '';
-
-      if (!mine.length) {
-        container.innerHTML = '<p style="text-align:center;">You have not posted any donations yet.</p>';
-        return;
-      }
-
-      mine.forEach(d => {
-        const card = document.createElement('div');
-        card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
-        card.innerHTML = `
-          <h4>${d.title}</h4>
-          <p>${d.description}</p>
-          <p><strong>Meals:</strong> ${d.quantity}</p>
-          <p><strong>Location:</strong> ${d.location}</p>
-          <p><strong>Status:</strong> ${
-            d.status === 'requested' && d.requestedBy
-              ? 'Request Accepted'
-              : d.status.charAt(0).toUpperCase() + d.status.slice(1)
-          }</p>
-        `;
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error('Error loading my donations:', err);
+      if (container) container.innerHTML = '<p style="text-align:center;">Unable to load your donations.</p>';
+      return;
     }
+
+    const all = await res.json();
+    const myId = String(user._id); // normalize
+    const mine = (Array.isArray(all) ? all : []).filter(d => {
+      if (!d) return false;
+      // donorId might be string or object; normalize and compare
+      const donorIdStr = d.donorId ? String(d.donorId._id || d.donorId) : '';
+      return donorIdStr === myId;
+    });
+
+    const container = document.getElementById('my-donations-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!mine.length) {
+      container.innerHTML = '<p style="text-align:center;">You have not posted any donations yet.</p>';
+      return;
+    }
+
+    mine.forEach(d => {
+      const card = document.createElement('div');
+      card.style = 'background:#f1fdf3;padding:1rem;margin-bottom:1.2rem;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);';
+      card.innerHTML = `
+        <h4>${d.title}</h4>
+        <p>${d.description || ''}</p>
+        <p><strong>Meals:</strong> ${d.quantity}</p>
+        <p><strong>Location:</strong> ${d.location}</p>
+        <p><strong>Status:</strong> ${
+          d.status === 'requested' && d.requestedBy
+            ? 'Request Accepted'
+            : (d.status ? (d.status.charAt(0).toUpperCase() + d.status.slice(1)) : 'Unknown')
+        }</p>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Error loading my donations:', err);
   }
+}
+
 
   // Request a donation (for NGO)
   window.requestDonation = async function(donationId) {
