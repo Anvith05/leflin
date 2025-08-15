@@ -62,4 +62,26 @@ router.get('/my', authMiddleware, async (req, res) => {
   }
 });
 
+// Request a donation (for NGOs)
+router.patch('/:id/request', authMiddleware, async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id);
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    
+    if (donation.status !== 'available') {
+      return res.status(400).json({ message: 'Donation is not available' });
+    }
+    
+    donation.status = 'requested';
+    donation.requestedBy = req.user._id;
+    await donation.save();
+    
+    res.json({ message: 'Donation request successful', donation });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 module.exports = router;
