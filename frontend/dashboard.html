@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     donationForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        const response = await fetch('http://localhost:3001/api/donations', {
+        const response = await fetch('/api/donations', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load available donations (for NGO)
 async function loadAvailableDonations() {
   try {
-    const res = await fetch('http://localhost:3001/api/donations', {
+    const res = await fetch('/api/donations', {
       headers: { 'Authorization': `Bearer ${token}` } // send token in case endpoint requires auth
     });
 
@@ -269,7 +269,7 @@ async function loadAvailableDonations() {
   // Load donor's donations
 async function loadMyDonations() {
   try {
-    const res = await fetch('http://localhost:3001/api/donations', {
+    const res = await fetch('/api/donations', {
       headers: { 'Authorization': `Bearer ${token}` } // send token if endpoint requires auth
     });
 
@@ -324,7 +324,7 @@ async function loadMyDonations() {
   // Request a donation (for NGO)
   window.requestDonation = async function(donationId) {
     try {
-      const res = await fetch(`http://localhost:3001/api/donations/${donationId}/request`, {
+      const res = await fetch(`/api/donations/${donationId}/request`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
